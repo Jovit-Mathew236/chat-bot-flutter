@@ -8,7 +8,8 @@ class GroqChatService {
 
   Future<void> startChat() async {
     groq.startChat();
-    groq.setCustomInstructionsWith("You are a helpful assistant.");
+    groq.setCustomInstructionsWith(
+        "You are a helpful assistant for developers.");
   }
 
   Future<String> sendMessage(String message) async {

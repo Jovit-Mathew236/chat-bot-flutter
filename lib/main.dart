@@ -1,25 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'GroqService.dart'; // Import your new service
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lottie/lottie.dart';
+import 'GroqService.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
-// void main() {
-//   runApp(MyApp());
-// }
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter is initialized
-  await dotenv.load(fileName: ".env.local"); // Load environment variables
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env.local");
 
-  final String apiKey =
-      dotenv.env['groqApiKey'] ?? 'default_api_key'; // Get API key
-  runApp(MyApp(apiKey: apiKey)); // Pass API key to MyApp
+  final String apiKey = dotenv.env['groqApiKey'] ?? 'default_api_key';
+  runApp(MyApp(apiKey: apiKey));
+}
+
+class AppTheme {
+  static final lightTheme = ThemeData(
+    brightness: Brightness.light,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.black, // Seed color for the light theme
+      primary: Colors.black, // Primary color as black
+      secondary: Colors.white, // Secondary color as white
+    ),
+    textTheme: GoogleFonts.poppinsTextTheme().copyWith(
+      bodyLarge: GoogleFonts.poppins(color: Colors.black87),
+      bodyMedium: GoogleFonts.poppins(color: Colors.black87),
+    ),
+    useMaterial3: true,
+  );
+
+  static final darkTheme = ThemeData(
+    brightness: Brightness.dark,
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.white, // Seed color for the dark theme
+      primary: Colors.white, // Primary color as white
+      secondary: Colors.black, // Secondary color as black
+      brightness: Brightness.dark,
+    ),
+    textTheme: GoogleFonts.poppinsTextTheme().copyWith(
+      bodyLarge: GoogleFonts.poppins(color: Colors.white),
+      bodyMedium: GoogleFonts.poppins(color: Colors.white),
+    ),
+    scaffoldBackgroundColor: Colors.black, // Background as black for dark theme
+    useMaterial3: true,
+  );
 }
 
 class MyApp extends StatefulWidget {
   final String apiKey;
 
   const MyApp({super.key, required this.apiKey});
-  // const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -37,19 +68,15 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AI Chat App',
+      title: 'Nexus',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.deepPurple,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      home: ChatScreen(
+        toggleTheme: _toggleTheme,
+        apiKey: widget.apiKey,
       ),
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: ChatScreen(toggleTheme: _toggleTheme, apiKey: widget.apiKey),
     );
   }
 }
@@ -65,11 +92,12 @@ class ChatScreen extends StatefulWidget {
   _ChatScreenState createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen>
+    with SingleTickerProviderStateMixin {
   late final GroqChatService _groqChatService;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<String> _messages = [];
+  final List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
   @override
@@ -79,22 +107,55 @@ class _ChatScreenState extends State<ChatScreen> {
     _groqChatService.startChat();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _sendMessage() async {
     if (_controller.text.isEmpty) return;
 
+    final userMessage = ChatMessage(
+      text: _controller.text,
+      isUser: true,
+      timestamp: DateTime.now(),
+    );
+
     setState(() {
-      _messages.add("You: ${_controller.text}");
+      _messages.add(userMessage);
       _isLoading = true;
     });
 
-    String response = await _groqChatService.sendMessage(_controller.text);
-
-    setState(() {
-      _messages.add("AI: $response");
-      _isLoading = false;
-    });
-
     _controller.clear();
+    _scrollToBottom();
+
+    try {
+      String response = await _groqChatService.sendMessage(userMessage.text);
+      // print('AI Response: $response');
+
+      final aiMessage = ChatMessage(
+        text: response,
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+
+      setState(() {
+        _messages.add(aiMessage);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: "Sorry, something went wrong. Please try again.",
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
+        _isLoading = false;
+      });
+    }
+
     _scrollToBottom();
   }
 
@@ -104,7 +165,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          curve: Curves.easeOutQuad,
         );
       }
     });
@@ -114,22 +175,21 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Your assistant'),
+        title: Text(
+          'Nexus',
+          style: GoogleFonts.orbitron(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         actions: [
           IconButton(
-            icon: Icon(Icons.dark_mode),
+            icon: Icon(Icons.palette_outlined),
             onPressed: () {
-              widget.toggleTheme(false);
-            },
-          ),
-          Switch(
-            value: Theme.of(context).brightness == Brightness.light,
-            onChanged: widget.toggleTheme,
-          ),
-          IconButton(
-            icon: Icon(Icons.light_mode),
-            onPressed: () {
-              widget.toggleTheme(true);
+              widget
+                  .toggleTheme(Theme.of(context).brightness == Brightness.dark);
             },
           ),
         ],
@@ -137,42 +197,64 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return MessageBubble(message: _messages[index]);
-              },
-            ),
+            child: _messages.isEmpty
+                ? _EmptyStateWidget()
+                : ListView.builder(
+                    controller: _scrollController,
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      return MessageBubble(
+                        message: _messages[index],
+                        index: index,
+                      );
+                    },
+                  ),
           ),
           if (_isLoading)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: CupertinoActivityIndicator(
-                radius: 15,
-                color: Theme.of(context).primaryColor,
+              child: Lottie.asset(
+                'assets/typing_loader.json',
+                width: 100,
+                height: 50,
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: "Type your message...",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.send),
-                        onPressed: _isLoading ? null : _sendMessage,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          _MessageInputField(
+            controller: _controller,
+            onSend: _isLoading ? null : _sendMessage,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyStateWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Lottie.asset(
+            'assets/ai_chat.json',
+            width: 250,
+            height: 250,
+          ),
+          Text(
+            'Welcome to Nexus',
+            style: GoogleFonts.orbitron(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Start a conversation with your AI assistant',
+            style: GoogleFonts.poppins(
+              color: Colors.grey,
+              fontSize: 16,
             ),
           ),
         ],
@@ -181,56 +263,136 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-class MessageBubble extends StatelessWidget {
-  final String message;
+class _MessageInputField extends StatelessWidget {
+  final TextEditingController controller;
+  final VoidCallback? onSend;
 
-  const MessageBubble({Key? key, required this.message}) : super(key: key);
+  const _MessageInputField({
+    required this.controller,
+    required this.onSend,
+  });
 
   @override
   Widget build(BuildContext context) {
-    bool isUserMessage = message.startsWith("You:");
-
-    return Align(
-      alignment: isUserMessage ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isUserMessage ? Colors.deepPurple[300] : Colors.grey[300],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(15),
-            topRight: Radius.circular(15),
-            bottomLeft: isUserMessage ? Radius.circular(15) : Radius.zero,
-            bottomRight: isUserMessage ? Radius.zero : Radius.circular(15),
+    return Container(
+      margin: EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey[800]
+            : Colors.grey[200],
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: Offset(0, 2),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: Offset(0, 2),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: "Type your message...",
+                  border: InputBorder.none,
+                  hintStyle: GoogleFonts.poppins(color: Colors.grey),
+                ),
+                style: GoogleFonts.poppins(),
+              ),
             ),
-          ],
-        ),
-        child: Text(
-          message,
-          style: TextStyle(
-            color: isUserMessage ? Colors.white : Colors.black,
           ),
-        ),
+          IconButton(
+            icon: Icon(
+              Icons.send_rounded,
+              color: onSend != null
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey,
+            ),
+            onPressed: onSend,
+          ),
+        ],
       ),
     );
   }
 }
 
-// class GroqChatService {
-//   // Simulating a service for sending and receiving messages from Groq (you can replace this with actual API calls)
-//   Future<String> sendMessage(String message) async {
-//     await Future.delayed(Duration(seconds: 1)); // Simulating a delay
-//     return "This is the response from Groq for: '$message'";
-//   }
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
 
-//   void startChat() {
-//     // Initialize or start a chat session if needed
-//   }
-// }
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+  });
+}
+
+class MessageBubble extends StatelessWidget {
+  final ChatMessage message;
+  final int index;
+
+  const MessageBubble({
+    Key? key,
+    required this.message,
+    required this.index,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isUser = message.isUser;
+
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+        padding: EdgeInsets.all(15),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isUser
+                ? [colorScheme.primary, Color(0xFF7B68EE)]
+                : [Colors.grey.shade300, Colors.grey.shade200],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: isUser ? Radius.circular(20) : Radius.zero,
+            bottomRight: isUser ? Radius.zero : Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            MarkdownBody(
+              data: message.text,
+              styleSheet: MarkdownStyleSheet(
+                p: GoogleFonts.poppins(
+                    fontSize: 15,
+                    color: isUser ? Colors.white : Colors.black87),
+              ),
+            ),
+            SizedBox(height: 5),
+            Text(
+              message.timestamp.toString().substring(10, 16),
+              style: GoogleFonts.poppins(
+                color: isUser ? Colors.white70 : Colors.black54,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
