@@ -33,8 +33,8 @@ class AppTheme {
   static final darkTheme = ThemeData(
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.white, // Seed color for the dark theme
-      primary: Colors.white, // Primary color as white
+      seedColor: Colors.purple, // Seed color for the dark theme
+      primary: Colors.purple, // Primary color as white
       secondary: Colors.black, // Secondary color as black
       brightness: Brightness.dark,
     ),
@@ -359,7 +359,7 @@ class MessageBubble extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isUser
-                ? [colorScheme.primary, Color(0xFF7B68EE)]
+                ? [Colors.indigo, Colors.deepPurple]
                 : [Colors.grey.shade300, Colors.grey.shade200],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
