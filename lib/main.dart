@@ -68,7 +68,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Groq Nexus',
+      title: 'Nexus',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
       theme: AppTheme.lightTheme,
@@ -176,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Groq Nexus',
+          'Nexus',
           style: GoogleFonts.orbitron(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.primary,
@@ -242,7 +242,7 @@ class _EmptyStateWidget extends StatelessWidget {
             height: 250,
           ),
           Text(
-            'Welcome to Groq Nexus',
+            'Welcome to Nexus',
             style: GoogleFonts.orbitron(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -345,7 +345,7 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // final colorScheme = Theme.of(context).colorScheme;
     final isUser = message.isUser;
 
     return Align(
