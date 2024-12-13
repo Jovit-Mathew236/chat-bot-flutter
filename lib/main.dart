@@ -9,7 +9,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env.local");
+  await dotenv.load(fileName: ".env");
 
   final String apiKey = dotenv.env['groqApiKey'] ?? 'default_api_key';
   runApp(MyApp(apiKey: apiKey));
@@ -33,8 +33,8 @@ class AppTheme {
   static final darkTheme = ThemeData(
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.purple, // Seed color for the dark theme
-      primary: Colors.purple, // Primary color as white
+      seedColor: Colors.white, // Seed color for the dark theme
+      primary: Colors.white, // Primary color as white
       secondary: Colors.black, // Secondary color as black
       brightness: Brightness.dark,
     ),
