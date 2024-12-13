@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+// import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lottie/lottie.dart';
 import 'GroqService.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -68,7 +68,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Nexus',
+      title: 'Groq Nexus',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
       theme: AppTheme.lightTheme,
@@ -176,7 +176,7 @@ class _ChatScreenState extends State<ChatScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Nexus',
+          'Groq Nexus',
           style: GoogleFonts.orbitron(
             fontWeight: FontWeight.bold,
             color: Theme.of(context).colorScheme.primary,
@@ -242,7 +242,7 @@ class _EmptyStateWidget extends StatelessWidget {
             height: 250,
           ),
           Text(
-            'Welcome to Nexus',
+            'Welcome to Groq Nexus',
             style: GoogleFonts.orbitron(
               fontSize: 22,
               fontWeight: FontWeight.bold,
